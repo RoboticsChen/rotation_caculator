@@ -6,10 +6,10 @@ Inspired by [articulatedrobotics.xyz/tools/rotation-calculator](https://articula
 
 ## Usage
 
-Open `rotation-calculator.html` in any modern browser. No build step, no server, no dependencies.
+Open `index.html` in any modern browser, or visit the [live page](https://roboticschen.github.io/rotation_caculator/). No build step, no server, no dependencies.
 
 ```bash
-open rotation-calculator.html
+open index.html
 ```
 
 ## Features

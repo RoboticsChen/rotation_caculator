@@ -807,10 +807,11 @@ function inputHTML(rot) {
   const resetBtn=`<button class="reset-btn" onclick="resetRotation(${id})">reset</button>`;
   let inner='';
   if(t==='euler') {
+    const lim=e.unit==='deg'?360:2*Math.PI;
     inner=
-      fieldRow('&#945;','n-ea-'+id,'r-ea-'+id,e.a,-180,180,`syncRange('r-ea-${id}',this.value);setEuler(${id},'a',+this.value)`,`syncNum('n-ea-${id}',this.value);setEuler(${id},'a',+this.value)`)
-      +fieldRow('&#946;','n-eb-'+id,'r-eb-'+id,e.b,-180,180,`syncRange('r-eb-${id}',this.value);setEuler(${id},'b',+this.value)`,`syncNum('n-eb-${id}',this.value);setEuler(${id},'b',+this.value)`)
-      +fieldRow('&#947;','n-ec-'+id,'r-ec-'+id,e.c,-180,180,`syncRange('r-ec-${id}',this.value);setEuler(${id},'c',+this.value)`,`syncNum('n-ec-${id}',this.value);setEuler(${id},'c',+this.value)`)
+      fieldRow('&#945;','n-ea-'+id,'r-ea-'+id,e.a,-lim,lim,`syncRange('r-ea-${id}',this.value);setEuler(${id},'a',+this.value)`,`syncNum('n-ea-${id}',this.value);setEuler(${id},'a',+this.value)`)
+      +fieldRow('&#946;','n-eb-'+id,'r-eb-'+id,e.b,-lim,lim,`syncRange('r-eb-${id}',this.value);setEuler(${id},'b',+this.value)`,`syncNum('n-eb-${id}',this.value);setEuler(${id},'b',+this.value)`)
+      +fieldRow('&#947;','n-ec-'+id,'r-ec-'+id,e.c,-lim,lim,`syncRange('r-ec-${id}',this.value);setEuler(${id},'c',+this.value)`,`syncNum('n-ec-${id}',this.value);setEuler(${id},'c',+this.value)`)
       ;
   } else if(t==='quaternion') {
     // Build rows in selected order: wxyz or xyzw
@@ -1117,7 +1118,15 @@ function setOutQuatOrder(outId,v) {
   updateAll();
 }
 function setEulerOrder(id,v) { rotations.find(r=>r.id===id).euler.order=v; updateAll(); }
-function setEulerUnit(id,v) { rotations.find(r=>r.id===id).euler.unit=v; updateAll(); }
+function setEulerUnit(id,v) {
+  const rot=rotations.find(r=>r.id===id);
+  if(rot.euler.unit!==v) {
+    const factor=v==='rad'?Math.PI/180:180/Math.PI;
+    rot.euler.a*=factor; rot.euler.b*=factor; rot.euler.c*=factor;
+    rot.euler.unit=v;
+    render();
+  }
+}
 function setEuler(id,k,v) { rotations.find(r=>r.id===id).euler[k]=v; updateAll(); }
 function setQuat(id,k,v) { rotations.find(r=>r.id===id).quat[k]=v; updateAll(); }
 function setMatrix(id,i,v) { rotations.find(r=>r.id===id).matrix[i]=v; updateAll(); }

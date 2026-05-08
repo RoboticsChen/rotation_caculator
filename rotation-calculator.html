@@ -1,0 +1,1146 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Rotation Calculator</title>
+<style>
+:root {
+  --bg: #0f1117;
+  --surface: #1a1d27;
+  --surface2: #22263a;
+  --border: #2e3350;
+  --text: #e2e8f0;
+  --text-dim: #8892b0;
+  --accent: #4fc3f7;
+  --red: #ef5350;
+  --green: #66bb6a;
+  --blue: #42a5f5;
+  --result-bg: #141a2e;
+  --result-border: #4fc3f7;
+  --font-mono: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', monospace;
+  --font-ui: 'IBM Plex Sans', 'Segoe UI', sans-serif;
+}
+[data-theme=light] {
+  --bg: #f0f2f8;
+  --surface: #ffffff;
+  --surface2: #f5f7ff;
+  --border: #d1d9ef;
+  --text: #1a1d27;
+  --text-dim: #5a6380;
+  --result-bg: #eef4ff;
+  --result-border: #1976d2;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: var(--font-ui);
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 24px;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface);
+}
+header h1 {
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: .04em;
+  color: var(--accent);
+  text-transform: uppercase;
+}
+.theme-btn {
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 5px 10px;
+  font-size: 12px;
+  color: var(--text-dim);
+  cursor: pointer;
+}
+.theme-btn:hover { border-color: var(--accent); color: var(--accent); }
+
+.workspace {
+  display: flex;
+  align-items: flex-start;
+  gap: 0;
+  padding: 24px 16px;
+  overflow-x: auto;
+  min-height: calc(100vh - 53px);
+}
+.add-btn {
+  flex-shrink: 0;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: 1.5px solid var(--border);
+  background: var(--surface);
+  color: var(--text-dim);
+  font-size: 18px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  align-self: center;
+  transition: all .15s;
+  line-height: 1;
+}
+.add-btn:hover { border-color: var(--accent); color: var(--accent); background: var(--surface2); }
+
+.card {
+  flex-shrink: 0;
+  width: 360px;
+  border: 1px solid var(--accent);
+  border-radius: 10px;
+  background: var(--surface);
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  overflow: hidden;
+  transition: border-color .2s, opacity .2s;
+}
+.card.ignored {
+  border-color: var(--border);
+  opacity: 0.55;
+}
+.card.result-card {
+  border-color: var(--accent);
+  background: var(--result-bg);
+}
+.card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 9px 14px;
+  border-bottom: 1px solid var(--border);
+  gap: 8px;
+}
+.card-title-wrap { display: flex; align-items: center; gap: 6px; flex: 1; min-width: 0; }
+.card-title {
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: .02em;
+  color: var(--accent);
+  white-space: nowrap;
+}
+.result-card .card-title { color: var(--accent); }
+.edit-name-btn {
+  background: none; border: none; cursor: pointer;
+  color: var(--text-dim); font-size: 13px; padding: 2px; flex-shrink: 0;
+}
+.edit-name-btn:hover { color: var(--text); }
+.ignore-btn {
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  color: var(--text-dim);
+  font-size: 11px;
+  font-family: var(--font-ui);
+  padding: 2px 8px;
+  cursor: pointer;
+  white-space: nowrap;
+  flex-shrink: 0;
+  transition: all .15s;
+}
+.ignore-btn.active {
+  border-color: var(--accent);
+  color: var(--accent);
+  background: rgba(79,195,247,.1);
+}
+.remove-btn {
+  background: none; border: none;
+  color: var(--text-dim); font-size: 18px; cursor: pointer;
+  width: 22px; height: 22px; border-radius: 4px;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+}
+.remove-btn:hover { color: var(--red); background: rgba(239,83,80,.1); }
+
+.input-section { padding: 12px 14px; border-bottom: 1px solid var(--border); }
+.input-row { display: flex; gap: 6px; margin-bottom: 10px; align-items: center; }
+.input-row select { flex-shrink: 0; }
+.reset-btn {
+  margin-left: auto;
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  color: var(--text-dim);
+  font-size: 11px;
+  font-family: var(--font-ui);
+  padding: 2px 8px;
+  cursor: pointer;
+  white-space: nowrap;
+  flex-shrink: 0;
+  transition: all .15s;
+}
+.reset-btn:hover { border-color: var(--accent); color: var(--accent); }
+select {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  color: var(--text);
+  font-size: 12px;
+  padding: 4px 7px;
+  font-family: var(--font-ui);
+}
+select:focus { outline: 1px solid var(--accent); }
+.field-label {
+  font-size: 12px;
+  color: var(--text-dim);
+  width: 22px;
+  text-align: right;
+  flex-shrink: 0;
+  font-family: var(--font-mono);
+}
+input[type=number] {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  color: var(--text);
+  font-family: var(--font-mono);
+  font-size: 13px;
+  padding: 5px 6px;
+  -moz-appearance: textfield;
+  min-width: 0;
+  width: 100%;
+}
+input[type=number]::-webkit-outer-spin-button,
+input[type=number]::-webkit-inner-spin-button { -webkit-appearance: none; }
+input[type=number]:focus { outline: 1px solid var(--accent); }
+.matrix-grid {
+  display: grid;
+  grid-template-columns: repeat(3,1fr);
+  gap: 4px;
+}
+.matrix-grid input[type=number] { text-align: center; padding: 5px 4px; }
+
+.viz-canvas {
+  width: 100%;
+  height: 160px;
+  background: #0a0c14;
+  display: block;
+}
+[data-theme=light] .viz-canvas { background: #e8eaf6; }
+
+.output-section { padding: 10px 14px 14px; }
+.out-group { margin-bottom: 12px; }
+.out-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 3px;
+}
+.out-label {
+  font-size: 12px;
+  color: var(--text-dim);
+  width: 22px;
+  text-align: right;
+  flex-shrink: 0;
+  font-family: var(--font-mono);
+}
+.out-val {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  color: var(--text);
+}
+.out-settings { display: flex; gap: 6px; margin-bottom: 6px; }
+.matrix-out {
+  display: grid;
+  grid-template-columns: repeat(3,1fr);
+  gap: 2px;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--text);
+}
+.field-row {
+  display: grid;
+  grid-template-columns: 22px 80px 1fr;
+  align-items: center;
+  gap: 7px;
+  margin-bottom: 6px;
+}
+input[type=range] {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 4px;
+  border-radius: 2px;
+  background: var(--border);
+  outline: none;
+  cursor: pointer;
+}
+input[type=range]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 13px; height: 13px;
+  border-radius: 50%;
+  background: var(--accent);
+  cursor: pointer;
+}
+input[type=range]::-moz-range-thumb {
+  width: 13px; height: 13px;
+  border-radius: 50%;
+  background: var(--accent);
+  border: none;
+  cursor: pointer;
+}
+
+.output-cols {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+.output-col { min-width: 0; }
+.output-matrix { margin-top: 4px; }
+.matrix-out {
+  display: grid;
+  grid-template-columns: repeat(3,1fr);
+  gap: 2px;
+  font-family: var(--font-mono);
+  font-size: 13px;
+  color: var(--text);
+}
+.matrix-out span { text-align: right; padding: 3px 6px; }
+/* copy button */
+.out-group-header {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 6px; padding-bottom: 4px; border-bottom: 1px solid var(--border);
+}
+.out-group-title {
+  font-size: 10px; font-weight: 700; letter-spacing: .1em;
+  text-transform: uppercase; color: var(--text-dim);
+  margin: 0; padding: 0; border: none;
+}
+.copy-btn {
+  background: none; border: none; cursor: pointer;
+  color: var(--text-dim); font-size: 11px; font-family: var(--font-ui);
+  padding: 1px 5px; border-radius: 3px; transition: all .15s;
+}
+.copy-btn:hover { color: var(--accent); background: rgba(79,195,247,.1); }
+.copy-btn.copied { color: var(--green); }
+
+.input-fields {
+  display: flex; flex-direction: column;
+}
+.input-fields .field-row { margin-bottom: 6px; }
+.input-fields .field-row:last-child { margin-bottom: 0; }
+.input-fields .matrix-grid { align-self: stretch; }
+
+/* decimal control in header */
+.decimal-ctrl {
+  display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--text-dim);
+}
+.decimal-ctrl label { white-space: nowrap; }
+.decimal-ctrl input[type=number] {
+  width: 44px; padding: 3px 6px; font-size: 12px;
+}
+
+.input-warn {
+  font-size: 11px;
+  color: #f59e0b;
+  font-family: var(--font-mono);
+  margin-top: 6px;
+  min-height: 0;
+  line-height: 1.4;
+}
+.input-warn:empty { display: none; }
+
+.paste-row {
+  display: flex; gap: 6px; margin-top: 8px; align-items: center;
+}
+.paste-input {
+  flex: 1; min-width: 0;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  color: var(--text);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  padding: 4px 7px;
+}
+.paste-input::placeholder { color: var(--text-dim); }
+.paste-input:focus { outline: 1px solid var(--accent); }
+.fill-btn {
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  color: var(--text-dim);
+  font-size: 11px;
+  font-family: var(--font-ui);
+  padding: 4px 10px;
+  cursor: pointer;
+  white-space: nowrap;
+  flex-shrink: 0;
+  transition: all .15s;
+}
+.fill-btn:hover { border-color: var(--accent); color: var(--accent); }
+
+.connector { display: flex; align-items: center; padding: 0 6px; align-self: stretch; }
+.connector-line { width: 20px; height: 2px; background: var(--border); border-radius: 1px; }
+
+.footnote {
+  padding: 8px 16px; font-size: 11px; color: var(--text-dim);
+  border-top: 1px solid var(--border); background: var(--surface);
+}
+.footnote a { color: var(--accent); text-decoration: none; }
+</style>
+</head>
+<body data-theme="dark">
+<header>
+  <h1>⊕ Rotation Calculator</h1>
+  <div class="decimal-ctrl">
+    <label for="dec-places">Decimals:</label>
+    <input type="number" id="dec-places" min="1" max="10" value="6" oninput="setDecimalPlaces(+this.value)">
+  </div>
+  <button class="theme-btn" onclick="toggleTheme()">Toggle Light/Dark</button>
+</header>
+<div class="workspace" id="workspace"></div>
+<div class="footnote">
+  Matrix-to-Euler uses Ken Shoemake's algorithm (Graphics Gems IV). All Euler angles are <strong>intrinsic</strong>.
+  For ROS (extrinsic XYZ / roll-pitch-yaw): select <strong>ZYX</strong>, enter/read values bottom-to-top.
+</div>
+
+<script>
+// ─── Math library ────────────────────────────────────────────────────────────
+const M = {
+  identity() { return [1,0,0, 0,1,0, 0,0,1]; },
+  mul(A, B) {
+    const C = new Array(9);
+    for (let r=0;r<3;r++) for (let c=0;c<3;c++) {
+      C[r*3+c]=A[r*3]*B[c]+A[r*3+1]*B[3+c]+A[r*3+2]*B[6+c];
+    }
+    return C;
+  },
+  transpose(A) { return [A[0],A[3],A[6],A[1],A[4],A[7],A[2],A[5],A[8]]; },
+  inv(A) { return M.transpose(A); }, // rotation matrices: inv = transpose
+  Rx(a) { const c=Math.cos(a),s=Math.sin(a); return [1,0,0, 0,c,-s, 0,s,c]; },
+  Ry(a) { const c=Math.cos(a),s=Math.sin(a); return [c,0,s, 0,1,0, -s,0,c]; },
+  Rz(a) { const c=Math.cos(a),s=Math.sin(a); return [c,-s,0, s,c,0, 0,0,1]; },
+
+  eulerToMatrix(a1,a2,a3, order) {
+    const Rs = { X: M.Rx, Y: M.Ry, Z: M.Rz };
+    const axes = order.split('');
+    return M.mul(M.mul(Rs[axes[0]](a1), Rs[axes[1]](a2)), Rs[axes[2]](a3));
+  },
+
+  quatToMatrix(w,x,y,z) {
+    const n=Math.sqrt(w*w+x*x+y*y+z*z); if(n<1e-10) return M.identity();
+    const s=1/n; const [ww,xx,yy,zz,wx,wy,wz,xy,xz,yz] =
+      [w*w*s,x*x*s,y*y*s,z*z*s,w*x*s,w*y*s,w*z*s,x*y*s,x*z*s,y*z*s];
+    return [
+      ww+xx-yy-zz, 2*(xy-wz),   2*(xz+wy),
+      2*(xy+wz),   ww-xx+yy-zz, 2*(yz-wx),
+      2*(xz-wy),   2*(yz+wx),   ww-xx-yy+zz
+    ];
+  },
+
+  axisAngleToMatrix(x,y,z, angle) {
+    const n=Math.sqrt(x*x+y*y+z*z); if(n<1e-10) return M.identity();
+    x/=n; y/=n; z/=n;
+    const c=Math.cos(angle), s=Math.sin(angle), t=1-c;
+    return [
+      t*x*x+c,   t*x*y-s*z, t*x*z+s*y,
+      t*x*y+s*z, t*y*y+c,   t*y*z-s*x,
+      t*x*z-s*y, t*y*z+s*x, t*z*z+c
+    ];
+  },
+
+  matrixToQuat(R) {
+    const [m00,m01,m02,m10,m11,m12,m20,m21,m22]=R;
+    const tr=m00+m11+m22;
+    let w,x,y,z;
+    if(tr>0) {
+      const s=.5/Math.sqrt(tr+1);
+      w=.25/s; x=(m21-m12)*s; y=(m02-m20)*s; z=(m10-m01)*s;
+    } else if(m00>m11&&m00>m22) {
+      const s=2*Math.sqrt(1+m00-m11-m22);
+      w=(m21-m12)/s; x=.25*s; y=(m01+m10)/s; z=(m02+m20)/s;
+    } else if(m11>m22) {
+      const s=2*Math.sqrt(1+m11-m00-m22);
+      w=(m02-m20)/s; x=(m01+m10)/s; y=.25*s; z=(m12+m21)/s;
+    } else {
+      const s=2*Math.sqrt(1+m22-m00-m11);
+      w=(m10-m01)/s; x=(m02+m20)/s; y=(m12+m21)/s; z=.25*s;
+    }
+    const n=Math.sqrt(w*w+x*x+y*y+z*z);
+    return [w/n,x/n,y/n,z/n];
+  },
+
+  matrixToAxisAngle(R) {
+    const [q0,q1,q2,q3]=M.matrixToQuat(R);
+    const angle=2*Math.acos(Math.min(1,Math.abs(q0)));
+    const s=Math.sin(angle/2);
+    if(s<1e-6) return [0,0,1,0];
+    const sign=q0<0?-1:1;
+    return [sign*q1/s, sign*q2/s, sign*q3/s, angle];
+  },
+
+  // Ken Shoemake matrix-to-Euler, all 12 sequences
+  matrixToEuler(R, order) {
+    // Encode each sequence
+    const seqMap = {
+      XYZ:{i:0,j:1,k:2,n:false,s:false},
+      YZX:{i:1,j:2,k:0,n:false,s:false},
+      ZXY:{i:2,j:0,k:1,n:false,s:false},
+      XZY:{i:0,j:2,k:1,n:true, s:false},
+      YXZ:{i:1,j:0,k:2,n:true, s:false},
+      ZYX:{i:2,j:1,k:0,n:true, s:false},
+      XZX:{i:0,j:2,k:0,n:false,s:true},
+      YXY:{i:1,j:0,k:1,n:false,s:true},
+      ZYZ:{i:2,j:1,k:2,n:false,s:true},
+      XYX:{i:0,j:1,k:0,n:true, s:true},
+      YZY:{i:1,j:2,k:1,n:true, s:true},
+      ZXZ:{i:2,j:0,k:2,n:true, s:true},
+    };
+    const seq=seqMap[order];
+    if(!seq) return [0,0,0];
+    const {i,j,k,n,s}=seq;
+    let a1,a2,a3;
+    if(s) {
+      // Proper Euler
+      const sy=Math.sqrt(R[i*3+j]*R[i*3+j]+R[i*3+k]*R[i*3+k]);
+      const singular=sy<1e-6;
+      if(!singular) {
+        a1=Math.atan2(R[i*3+j], R[i*3+k]);
+        a2=Math.atan2(sy, R[i*3+i]);
+        a3=Math.atan2(R[j*3+i],-R[k*3+i]);
+      } else {
+        a1=Math.atan2(-R[j*3+k], R[j*3+j]);
+        a2=Math.atan2(sy, R[i*3+i]);
+        a3=0;
+      }
+    } else {
+      // Tait-Bryan
+      const cy=Math.sqrt(R[i*3+i]*R[i*3+i]+R[j*3+i]*R[j*3+i]);
+      const singular=cy<1e-6;
+      if(!singular) {
+        a1=Math.atan2( R[k*3+j], R[k*3+k]);
+        a2=Math.atan2(-R[k*3+i], cy);
+        a3=Math.atan2( R[j*3+i], R[i*3+i]);
+      } else {
+        a1=Math.atan2(-R[j*3+k], R[j*3+j]);
+        a2=Math.atan2(-R[k*3+i], cy);
+        a3=0;
+      }
+    }
+    if(n) { a1=-a1; a2=-a2; a3=-a3; }
+    return [a1,a2,a3];
+  },
+
+  normalize(R) {
+    // Gram-Schmidt orthonormalization to clean up floating point drift
+    let c0=[R[0],R[3],R[6]], c1=[R[1],R[4],R[7]], c2=[R[2],R[5],R[8]];
+    const dot=(a,b)=>a[0]*b[0]+a[1]*b[1]+a[2]*b[2];
+    const scale=(a,s)=>[a[0]*s,a[1]*s,a[2]*s];
+    const sub=(a,b)=>[a[0]-b[0],a[1]-b[1],a[2]-b[2]];
+    const norm=(a)=>{ const n=Math.sqrt(dot(a,a)); return n<1e-10?a:scale(a,1/n); };
+    c0=norm(c0);
+    c1=norm(sub(c1, scale(c0,dot(c0,c1))));
+    c2=norm(sub(c2, sub(scale(c0,dot(c0,c2)),scale(c1,dot(c1,c2)))));
+    return [c0[0],c1[0],c2[0],c0[1],c1[1],c2[1],c0[2],c1[2],c2[2]];
+  }
+};
+
+// ─── State ───────────────────────────────────────────────────────────────────
+let rotations = [];
+let nextId = 1;
+
+function defaultRotation(id) {
+  return {
+    id, name: `Rotation ${id}`,
+    inputType: 'euler',
+    euler: { order:'XYZ', unit:'deg', a:0, b:0, c:0 },
+    quat: { w:1, x:0, y:0, z:0, order:'xyzw' },
+    axis: { x:0, y:0, z:1, angle:0, unit:'deg' },
+    matrix: M.identity(),
+    ignore: false,
+    outEuler: { order:'XYZ', unit:'deg' },
+    outQuat: { order:'xyzw' },
+    outAxis: { unit:'deg' },
+    _mat: M.identity(),
+    _canvas: null
+  };
+}
+
+// ─── Canvas 2D axis visualizer ───────────────────────────────────────────────
+// Camera direction (isometric-ish): eye at (1.2, 1.0, 1.6) normalised
+const CAM = (()=>{
+  const e=[1.2,1.0,1.6], n=Math.sqrt(e[0]**2+e[1]**2+e[2]**2);
+  return e.map(v=>v/n);
+})();
+// Up vector for view (world Y)
+const CAM_RIGHT=(()=>{
+  const up=[0,1,0];
+  // right = normalize(eye × up)
+  const r=[CAM[1]*up[2]-CAM[2]*up[1], CAM[2]*up[0]-CAM[0]*up[2], CAM[0]*up[1]-CAM[1]*up[0]];
+  const n=Math.sqrt(r[0]**2+r[1]**2+r[2]**2); return r.map(v=>v/n);
+})();
+const CAM_UP=(()=>{
+  // up = cam × right
+  const u=[CAM[1]*CAM_RIGHT[2]-CAM[2]*CAM_RIGHT[1],
+            CAM[2]*CAM_RIGHT[0]-CAM[0]*CAM_RIGHT[2],
+            CAM[0]*CAM_RIGHT[1]-CAM[1]*CAM_RIGHT[0]];
+  const n=Math.sqrt(u[0]**2+u[1]**2+u[2]**2); return u.map(v=>v/n);
+})();
+
+function project3D(x,y,z) {
+  // Project world point to 2D screen coords (x right, y down)
+  const sx = x*CAM_RIGHT[0]+y*CAM_RIGHT[1]+z*CAM_RIGHT[2];
+  const sy =-(x*CAM_UP[0]   +y*CAM_UP[1]  +z*CAM_UP[2]);
+  return [sx, sy];
+}
+
+function drawArrow(ctx, ox,oy, tx,ty, color, label) {
+  const dx=tx-ox, dy=ty-oy, len=Math.sqrt(dx*dx+dy*dy);
+  if(len<1) return;
+  ctx.strokeStyle=color; ctx.fillStyle=color;
+  ctx.lineWidth=2.5; ctx.lineCap='round';
+  // shaft (leave 10px for head)
+  const hlen=10, ux=dx/len, uy=dy/len;
+  ctx.beginPath();
+  ctx.moveTo(ox,oy);
+  ctx.lineTo(tx-ux*hlen, ty-uy*hlen);
+  ctx.stroke();
+  // arrowhead
+  const hw=5;
+  ctx.beginPath();
+  ctx.moveTo(tx,ty);
+  ctx.lineTo(tx-ux*hlen-uy*hw, ty-uy*hlen+ux*hw);
+  ctx.lineTo(tx-ux*hlen+uy*hw, ty-uy*hlen-ux*hw);
+  ctx.closePath();
+  ctx.fill();
+  // label
+  ctx.font='bold 11px monospace';
+  ctx.fillText(label, tx+ux*4+3, ty+uy*4+4);
+}
+
+function drawCubeEdge(ctx, pts, a, b) {
+  ctx.beginPath();
+  ctx.moveTo(pts[a][0],pts[a][1]);
+  ctx.lineTo(pts[b][0],pts[b][1]);
+  ctx.stroke();
+}
+
+function initViz(rot, canvas) {
+  rot._canvas=canvas;
+  updateViz(rot);
+}
+
+function updateViz(rot) {
+  const canvas=rot._canvas;
+  if(!canvas) return;
+  const W=canvas.width=canvas.offsetWidth||300;
+  const H=canvas.height=160;
+  const ctx=canvas.getContext('2d');
+  const dark=document.body.dataset.theme!=='light';
+  ctx.clearRect(0,0,W,H);
+  ctx.fillStyle=dark?'#0a0c14':'#e8eaf6';
+  ctx.fillRect(0,0,W,H);
+
+  const cx=W/2, cy=H/2, scale=60;
+  const R=rot._mat;
+
+  // Transform world axes by rotation matrix R
+  // R column i = where world axis i goes
+  function worldToScreen(wx,wy,wz) {
+    // Apply R: rotated = R * world_vec
+    const rx=R[0]*wx+R[1]*wy+R[2]*wz;
+    const ry=R[3]*wx+R[4]*wy+R[5]*wz;
+    const rz=R[6]*wx+R[7]*wy+R[8]*wz;
+    const [sx,sy]=project3D(rx,ry,rz);
+    return [cx+sx*scale, cy+sy*scale];
+  }
+
+  // Draw cube wireframe (unit cube corners ±0.5)
+  const s=0.5;
+  const corners=[
+    [-s,-s,-s],[s,-s,-s],[s,s,-s],[-s,s,-s],
+    [-s,-s, s],[s,-s, s],[s,s, s],[-s,s, s]
+  ];
+  const edges=[[0,1],[1,2],[2,3],[3,0],[4,5],[5,6],[6,7],[7,4],[0,4],[1,5],[2,6],[3,7]];
+  const pts=corners.map(([x,y,z])=>worldToScreen(x,y,z));
+  ctx.strokeStyle=dark?'rgba(79,195,247,0.2)':'rgba(25,118,210,0.2)';
+  ctx.lineWidth=1;
+  edges.forEach(([a,b])=>drawCubeEdge(ctx,pts,a,b));
+
+  // Draw axes
+  const O=worldToScreen(0,0,0);
+  const AX=worldToScreen(1,0,0);
+  const AY=worldToScreen(0,1,0);
+  const AZ=worldToScreen(0,0,1);
+
+  // Sort by depth (z in camera space) for painter's algorithm
+  const depthOf=(wx,wy,wz)=>{ const rx=R[0]*wx+R[1]*wy+R[2]*wz,ry=R[3]*wx+R[4]*wy+R[5]*wz,rz=R[6]*wx+R[7]*wy+R[8]*wz; return -(rx*CAM[0]+ry*CAM[1]+rz*CAM[2]); };
+  const axes=[
+    {end:AX, color:'#ef5350', label:'X', depth:depthOf(1,0,0)},
+    {end:AY, color:'#66bb6a', label:'Y', depth:depthOf(0,1,0)},
+    {end:AZ, color:'#42a5f5', label:'Z', depth:depthOf(0,0,1)},
+  ].sort((a,b)=>b.depth-a.depth);
+
+  axes.forEach(({end,color,label})=>drawArrow(ctx,O[0],O[1],end[0],end[1],color,label));
+}
+
+// ─── Compute matrix from input ────────────────────────────────────────────────
+function computeMat(rot) {
+  let m;
+  const t=rot.inputType;
+  if(t==='euler') {
+    const e=rot.euler;
+    const toRad=e.unit==='deg'?Math.PI/180:1;
+    m=M.eulerToMatrix(e.a*toRad, e.b*toRad, e.c*toRad, e.order);
+  } else if(t==='quaternion') {
+    const q=rot.quat;
+    m=M.quatToMatrix(q.w,q.x,q.y,q.z);
+  } else if(t==='axis') {
+    const a=rot.axis;
+    const toRad=a.unit==='deg'?Math.PI/180:1;
+    m=M.axisAngleToMatrix(a.x,a.y,a.z,a.angle*toRad);
+  } else {
+    m=[...rot.matrix];
+  }
+  rot._mat=m;
+  return m;
+}
+
+// ─── Compute outputs from matrix ─────────────────────────────────────────────
+function getOutputs(mat, outEuler, outAxis) {
+  const [w,x,y,z]=M.matrixToQuat(mat);
+  const eu=M.matrixToEuler(mat, outEuler.order);
+  const toUnit=outEuler.unit==='deg'?180/Math.PI:1;
+  const [ax,ay,az,ang]=M.matrixToAxisAngle(mat);
+  const aunit=outAxis.unit==='deg'?180/Math.PI:1;
+  return {
+    euler:[eu[0]*toUnit, eu[1]*toUnit, eu[2]*toUnit],
+    quat:[w,x,y,z],
+    axis:[ax,ay,az,ang*aunit],
+    mat
+  };
+}
+
+// ─── Render ───────────────────────────────────────────────────────────────────
+let DEC = 6;
+function fmt(v) { return isNaN(v)?'—':v.toFixed(DEC); }
+function setDecimalPlaces(n) {
+  if(isNaN(n)||n<1) return;
+  DEC=Math.min(10,Math.max(1,n));
+  updateAll();
+}
+
+function buildOutputHTML(outId, outEuler, outAxis, outQuat) {
+  const qo=(outQuat&&outQuat.order)||'xyzw';
+  const qLabels=qo==='xyzw'?['x','y','z','w']:['w','x','y','z'];
+  return `
+  <div class="output-cols">
+    <div class="output-col">
+      <div class="out-group">
+        <div class="out-group-header">
+          <span class="out-group-title">Euler Angles</span>
+          <button class="copy-btn" onclick="copyEuler('${outId}',this)" title="Copy as Python list">copy</button>
+        </div>
+        <div class="out-settings">
+          <select onchange="setOutEulerOrder('${outId}',this.value)" id="oe-ord-${outId}">
+            ${eulerOrders().map(o=>`<option value="${o}">${o}</option>`).join('')}
+          </select>
+          <select onchange="setOutEulerUnit('${outId}',this.value)" id="oe-unit-${outId}">
+            <option value="deg">deg</option><option value="rad">rad</option>
+          </select>
+        </div>
+        <div class="out-row"><span class="out-label">&#945;:</span><span class="out-val" id="oe-a-${outId}">0.000000</span></div>
+        <div class="out-row"><span class="out-label">&#946;:</span><span class="out-val" id="oe-b-${outId}">0.000000</span></div>
+        <div class="out-row"><span class="out-label">&#947;:</span><span class="out-val" id="oe-c-${outId}">0.000000</span></div>
+      </div>
+    </div>
+    <div class="output-col">
+      <div class="out-group">
+        <div class="out-group-header">
+          <span class="out-group-title">Quaternion</span>
+          <button class="copy-btn" onclick="copyQuat('${outId}',this)" title="Copy as Python list">copy</button>
+        </div>
+        <div class="out-settings">
+          <select onchange="setOutQuatOrder('${outId}',this.value)" id="oq-ord-${outId}">
+            <option value="wxyz"${qo==='wxyz'?' selected':''}>w,x,y,z</option>
+            <option value="xyzw"${qo==='xyzw'?' selected':''}>x,y,z,w</option>
+          </select>
+        </div>
+        ${qLabels.map(k=>`<div class="out-row"><span class="out-label">${k}:</span><span class="out-val" id="oq-${k}-${outId}">0.000000</span></div>`).join('')}
+      </div>
+    </div>
+  </div>
+  <div class="output-matrix">
+    <div class="out-group-header">
+      <span class="out-group-title">Rotation Matrix</span>
+      <button class="copy-btn" onclick="copyMatrix('${outId}',this)" title="Copy as Python nested list">copy</button>
+    </div>
+    <div class="matrix-out" id="om-${outId}">
+      ${Array(9).fill(0).map((_,i)=>`<span>${i%4===0?'1.0000':'0.0000'}</span>`).join('')}
+    </div>
+  </div>`;
+}
+
+function eulerOrders() {
+  return ['XYZ','YZX','ZXY','XZY','YXZ','ZYX','XZX','YXY','YZY','ZXZ','ZYZ','XYX'];
+}
+
+function sliderRange(key) {
+  if(key==='angle'||key==='a'||key==='b'||key==='c') return [-180,180];
+  if(key==='w') return [-1,1];
+  return [-1,1]; // x,y,z components
+}
+
+function fieldRow(label, numId, rangeId, value, min, max, onNum, onRange) {
+  return `<div class="field-row">
+    <span class="field-label">${label}:</span>
+    <input type="number" id="${numId}" value="${value}" step="any" oninput="${onNum}">
+    <input type="range" id="${rangeId}" min="${min}" max="${max}" step="0.1" value="${Math.max(min,Math.min(max,value))}" oninput="${onRange}">
+  </div>`;
+}
+
+function inputHTML(rot) {
+  const id=rot.id, t=rot.inputType;
+  const e=rot.euler, q=rot.quat, mx=rot.matrix;
+
+  const resetBtn=`<button class="reset-btn" onclick="resetRotation(${id})">reset</button>`;
+  let inner='';
+  if(t==='euler') {
+    inner=
+      fieldRow('&#945;','n-ea-'+id,'r-ea-'+id,e.a,-180,180,`syncRange('r-ea-${id}',this.value);setEuler(${id},'a',+this.value)`,`syncNum('n-ea-${id}',this.value);setEuler(${id},'a',+this.value)`)
+      +fieldRow('&#946;','n-eb-'+id,'r-eb-'+id,e.b,-180,180,`syncRange('r-eb-${id}',this.value);setEuler(${id},'b',+this.value)`,`syncNum('n-eb-${id}',this.value);setEuler(${id},'b',+this.value)`)
+      +fieldRow('&#947;','n-ec-'+id,'r-ec-'+id,e.c,-180,180,`syncRange('r-ec-${id}',this.value);setEuler(${id},'c',+this.value)`,`syncNum('n-ec-${id}',this.value);setEuler(${id},'c',+this.value)`)
+      ;
+  } else if(t==='quaternion') {
+    // Build rows in selected order: wxyz or xyzw
+    const ord=q.order||'xyzw';
+    const keys=ord==='xyzw'?['x','y','z','w']:['w','x','y','z'];
+    inner=keys.map(k=>
+      fieldRow(k,'n-q'+k+'-'+id,'r-q'+k+'-'+id,q[k],-1,1,
+        `syncRange('r-q${k}-${id}',this.value);setQuat(${id},'${k}',+this.value)`,
+        `syncNum('n-q${k}-${id}',this.value);setQuat(${id},'${k}',+this.value)`)
+    ).join('');
+  } else {
+    // Matrix: 3×3 grid, padded to same height as 4 field-rows
+    inner=`<div class="matrix-grid">${mx.map((v,i)=>`<input type="number" value="${v.toFixed(6)}" step="any" oninput="setMatrix(${id},${i},+this.value)">`).join('')}</div>`;
+  }
+  return {body:`<div class="input-fields">${inner}</div>`, resetBtn};
+}
+
+function typeRowHTML(rot) {
+  const id=rot.id, t=rot.inputType, e=rot.euler, eu=eulerOrders();
+  const {resetBtn}=inputHTML(rot);
+  let extra='';
+  if(t==='euler') {
+    extra=`
+      <select onchange="setEulerOrder(${id},this.value)">
+        ${eu.map(o=>`<option value="${o}"${o===e.order?' selected':''}>${o}</option>`).join('')}
+      </select>
+      <select onchange="setEulerUnit(${id},this.value)">
+        <option value="deg"${e.unit==='deg'?' selected':''}>deg</option>
+        <option value="rad"${e.unit==='rad'?' selected':''}>rad</option>
+      </select>`;
+  } else if(t==='quaternion') {
+    const qo=rot.quat.order||'xyzw';
+    extra=`
+      <select onchange="setQuatInputOrder(${id},this.value)">
+        <option value="wxyz"${qo==='wxyz'?' selected':''}>w,x,y,z</option>
+        <option value="xyzw"${qo==='xyzw'?' selected':''}>x,y,z,w</option>
+      </select>`;
+  }
+  return `<div class="input-row">
+    <select onchange="setInputType(${id},this.value)">
+      <option value="euler"${t==='euler'?' selected':''}>Euler</option>
+      <option value="quaternion"${t==='quaternion'?' selected':''}>Quaternion</option>
+      <option value="matrix"${t==='matrix'?' selected':''}>Matrix</option>
+    </select>
+    ${extra}
+    ${resetBtn}
+  </div>`;
+}
+
+function render() {
+  const ws=document.getElementById('workspace');
+  // Preserve canvas elements across re-renders
+  const oldCanvases={};
+  ws.querySelectorAll('canvas[data-rid]').forEach(c=>{ oldCanvases[c.dataset.rid]=c; });
+
+  let html='';
+  rotations.forEach((rot,idx)=>{
+    const id=rot.id;
+    const outId='r'+id;
+    html+=`
+    <div class="connector"><div class="connector-line"></div></div>
+    <button class="add-btn" title="Add rotation here" onclick="addRotation(${idx})">+</button>
+    <div class="connector"><div class="connector-line"></div></div>
+    <div class="card${rot.ignore?' ignored':''}" id="card-${id}">
+      <div class="card-header">
+        <div class="card-title-wrap">
+          <span class="card-title" id="title-${id}">${rot.name}</span>
+          <button class="edit-name-btn" title="Edit name" onclick="editName(${id})">✎</button>
+        </div>
+        <button class="ignore-btn${rot.ignore?' active':''}" onclick="toggleIgnore(${id})">Ignore</button>
+        <button class="remove-btn" title="Remove" onclick="removeRotation(${id})">×</button>
+      </div>
+      <div class="input-section">
+        ${typeRowHTML(rot)}
+        ${inputHTML(rot).body}
+        <div class="input-warn" id="warn-${id}"></div>
+        <div class="paste-row">
+          <input type="text" class="paste-input" id="paste-${id}" placeholder="Paste values…" onkeydown="if(event.key==='Enter')fillPaste(${id})">
+          <button class="fill-btn" onclick="fillPaste(${id})">Fill</button>
+        </div>
+      </div>
+      <canvas class="viz-canvas" data-rid="${id}"></canvas>
+      <div class="output-section">
+        ${buildOutputHTML(outId, rot.outEuler, rot.outAxis, rot.outQuat)}
+      </div>
+    </div>`;
+  });
+
+  // Result column
+  const outId='result';
+  html+=`
+  <div class="connector"><div class="connector-line"></div></div>
+  <button class="add-btn" title="Add rotation here" onclick="addRotation(${rotations.length})">+</button>
+  <div class="connector"><div class="connector-line"></div></div>
+  <div class="card result-card" id="card-result">
+    <div class="card-header">
+      <div class="card-title-wrap"><span class="card-title">Result</span></div>
+    </div>
+    <canvas class="viz-canvas" data-rid="result"></canvas>
+    <div class="output-section">
+      ${buildOutputHTML(outId, {order:'XYZ',unit:'deg'}, {unit:'deg'}, window._resultRot?.outQuat||{order:'wxyz'})}
+    </div>
+  </div>`;
+
+  ws.innerHTML=html;
+
+  // Restore or init Three.js scenes
+  ws.querySelectorAll('canvas[data-rid]').forEach(canvas=>{
+    const rid=canvas.dataset.rid;
+    if(rid==='result') {
+      if(!window._resultRot) window._resultRot={
+        _mat:M.identity(), outEuler:{order:'XYZ',unit:'deg'}, outAxis:{unit:'deg'}, outQuat:{order:'xyzw'},
+        _canvas:null
+      };
+      initViz(window._resultRot, canvas);
+    } else {
+      const rot=rotations.find(r=>r.id===+rid);
+      if(rot) initViz(rot, canvas);
+    }
+  });
+
+  // Restore output dropdown selections
+  rotations.forEach(rot=>{
+    const oid='r'+rot.id;
+    const oe=document.getElementById(`oe-ord-${oid}`);
+    if(oe) oe.value=rot.outEuler.order;
+    const ou=document.getElementById(`oe-unit-${oid}`);
+    if(ou) ou.value=rot.outEuler.unit;
+    const oq=document.getElementById(`oq-ord-${oid}`);
+    if(oq) oq.value=rot.outQuat?.order||'xyzw';
+  });
+  const rqSel=document.getElementById('oq-ord-result');
+  if(rqSel) rqSel.value=window._resultRot?.outQuat?.order||'xyzw';
+
+  updateAll();
+}
+
+function validateInput(rot) {
+  const t=rot.inputType;
+  if(t==='quaternion') {
+    const {w,x,y,z}=rot.quat;
+    const n=Math.sqrt(w*w+x*x+y*y+z*z);
+    if(n<1e-10) return '⚠ Zero quaternion';
+    if(Math.abs(n-1)>1e-3) return `⚠ Not unit quaternion  |q| = ${n.toFixed(6)}`;
+  } else if(t==='matrix') {
+    const m=rot.matrix;
+    const det=m[0]*(m[4]*m[8]-m[5]*m[7])-m[1]*(m[3]*m[8]-m[5]*m[6])+m[2]*(m[3]*m[7]-m[4]*m[6]);
+    const RtR=M.mul(M.transpose(m),m);
+    const I=M.identity();
+    let maxOff=0;
+    for(let i=0;i<9;i++) maxOff=Math.max(maxOff,Math.abs(RtR[i]-I[i]));
+    if(Math.abs(det-1)>1e-3) return `⚠ det = ${det.toFixed(6)}  (expected 1)`;
+    if(maxOff>1e-3) return `⚠ Not orthogonal  max(RᵀR−I) = ${maxOff.toFixed(6)}`;
+  }
+  return '';
+}
+
+function updateAll() {
+  // Compute individual matrices
+  rotations.forEach(rot=>{ computeMat(rot); updateViz(rot); });
+
+  // Update individual outputs + validation warnings
+  rotations.forEach(rot=>{
+    const oid='r'+rot.id;
+    const out=getOutputs(rot._mat, rot.outEuler, rot.outAxis);
+    writeOutputs(oid, out, rot.outQuat);
+    const warnEl=document.getElementById(`warn-${rot.id}`);
+    if(warnEl) warnEl.textContent=validateInput(rot);
+  });
+
+  // Compute result = product of all non-ignored
+  let res=M.identity();
+  rotations.filter(r=>!r.ignore).forEach(r=>{ res=M.mul(res,r._mat); });
+
+  const rr=window._resultRot||{};
+  rr._mat=res; rr.outEuler=rr.outEuler||{order:'XYZ',unit:'deg'}; rr.outAxis=rr.outAxis||{unit:'deg'};
+  window._resultRot=rr;
+  updateViz(rr);
+  const rout=getOutputs(res, rr.outEuler, rr.outAxis);
+  writeOutputs('result', rout, rr.outQuat);
+}
+
+function writeOutputs(outId, out, outQuat) {
+  const set=(id,v)=>{ const el=document.getElementById(id); if(el) el.textContent=v; };
+  set(`oe-a-${outId}`, fmt(out.euler[0]));
+  set(`oe-b-${outId}`, fmt(out.euler[1]));
+  set(`oe-c-${outId}`, fmt(out.euler[2]));
+  const qo=(outQuat&&outQuat.order)||'xyzw';
+  const [qw,qx,qy,qz]=out.quat;
+  if(qo==='xyzw') {
+    set(`oq-x-${outId}`, fmt(qx));
+    set(`oq-y-${outId}`, fmt(qy));
+    set(`oq-z-${outId}`, fmt(qz));
+    set(`oq-w-${outId}`, fmt(qw));
+  } else {
+    set(`oq-w-${outId}`, fmt(qw));
+    set(`oq-x-${outId}`, fmt(qx));
+    set(`oq-y-${outId}`, fmt(qy));
+    set(`oq-z-${outId}`, fmt(qz));
+  }
+  const om=document.getElementById(`om-${outId}`);
+  if(om) om.innerHTML=out.mat.map(v=>`<span>${fmt(v)}</span>`).join('');
+}
+
+// ─── Event handlers ───────────────────────────────────────────────────────────
+function addRotation(beforeIdx) {
+  const rot=defaultRotation(nextId++);
+  rotations.splice(beforeIdx,0,rot);
+  render();
+}
+
+function removeRotation(id) {
+  rotations=rotations.filter(r=>r.id!==id);
+  render();
+}
+
+function editName(id) {
+  const rot=rotations.find(r=>r.id===id);
+  const name=prompt('Rotation name:', rot.name);
+  if(name!==null) { rot.name=name; document.getElementById(`title-${id}`).textContent=name; }
+}
+
+function syncRange(rangeId, val) {
+  const el=document.getElementById(rangeId);
+  if(el) { const v=parseFloat(val); if(!isNaN(v)) el.value=Math.max(+el.min,Math.min(+el.max,v)); }
+}
+function syncNum(numId, val) {
+  const el=document.getElementById(numId);
+  if(el) el.value=parseFloat(val).toFixed(4);
+}
+
+function toggleIgnore(id) {
+  const rot=rotations.find(r=>r.id===id);
+  rot.ignore=!rot.ignore;
+  const card=document.getElementById(`card-${id}`);
+  if(card) card.classList.toggle('ignored', rot.ignore);
+  const btn=document.querySelector(`#card-${id} .ignore-btn`);
+  if(btn) btn.classList.toggle('active', rot.ignore);
+  updateAll();
+}
+
+function resetRotation(id) {
+  const rot=rotations.find(r=>r.id===id);
+  rot.euler={order:rot.euler.order, unit:rot.euler.unit, a:0, b:0, c:0};
+  rot.quat={w:1,x:0,y:0,z:0,order:rot.quat.order||'xyzw'};
+  rot.matrix=M.identity();
+  if(rot.inputType==='axis') rot.inputType='euler';
+  render();
+}
+
+function copyText(text, btn) {
+  navigator.clipboard.writeText(text).then(()=>{
+    const orig=btn.textContent; btn.textContent='✓'; btn.classList.add('copied');
+    setTimeout(()=>{ btn.textContent=orig; btn.classList.remove('copied'); },1200);
+  });
+}
+
+function copyEuler(outId, btn) {
+  const a=document.getElementById(`oe-a-${outId}`)?.textContent;
+  const b=document.getElementById(`oe-b-${outId}`)?.textContent;
+  const c=document.getElementById(`oe-c-${outId}`)?.textContent;
+  if(a&&b&&c) copyText(`[${a}, ${b}, ${c}]`, btn);
+}
+
+function copyQuat(outId, btn) {
+  let qo='wxyz';
+  if(outId==='result') { qo=window._resultRot?.outQuat?.order||'xyzw'; }
+  else { const rot=rotations.find(r=>'r'+r.id===outId); if(rot) qo=rot.outQuat?.order||'xyzw'; }
+  const keys=qo==='xyzw'?['x','y','z','w']:['w','x','y','z'];
+  const vals=keys.map(k=>document.getElementById(`oq-${k}-${outId}`)?.textContent);
+  if(vals.every(Boolean)) copyText(`[${vals.join(', ')}]`, btn);
+}
+
+function copyMatrix(outId, btn) {
+  const spans=document.getElementById(`om-${outId}`)?.querySelectorAll('span');
+  if(!spans||spans.length!==9) return;
+  const v=[...spans].map(s=>s.textContent);
+  const text=`[[${v[0]}, ${v[1]}, ${v[2]}], [${v[3]}, ${v[4]}, ${v[5]}], [${v[6]}, ${v[7]}, ${v[8]}]]`;
+  copyText(text, btn);
+}
+
+function fillPaste(id) {
+  const rot=rotations.find(r=>r.id===id);
+  const text=document.getElementById(`paste-${id}`)?.value||'';
+  const nums=[...text.matchAll(/[-+]?(?:\d+\.?\d*|\.\d+)(?:[eE][-+]?\d+)?/g)].map(m=>parseFloat(m[0]));
+  if(!nums.length) return;
+  const t=rot.inputType;
+  if(t==='euler') {
+    ['a','b','c'].forEach((k,i)=>{ if(i<nums.length) rot.euler[k]=nums[i]; });
+  } else if(t==='quaternion') {
+    const keys=(rot.quat.order||'xyzw')==='xyzw'?['x','y','z','w']:['w','x','y','z'];
+    keys.forEach((k,i)=>{ if(i<nums.length) rot.quat[k]=nums[i]; });
+  } else if(t==='matrix') {
+    for(let i=0;i<9&&i<nums.length;i++) rot.matrix[i]=nums[i];
+  }
+  render();
+}
+
+function setInputType(id,v) { rotations.find(r=>r.id===id).inputType=v; render(); }
+function setQuatInputOrder(id,v) { rotations.find(r=>r.id===id).quat.order=v; render(); }
+function setOutQuatOrder(outId,v) {
+  if(outId==='result') { window._resultRot.outQuat={order:v}; }
+  else { const rot=rotations.find(r=>'r'+r.id===outId); if(rot) rot.outQuat={order:v}; }
+  updateAll();
+}
+function setEulerOrder(id,v) { rotations.find(r=>r.id===id).euler.order=v; updateAll(); }
+function setEulerUnit(id,v) { rotations.find(r=>r.id===id).euler.unit=v; updateAll(); }
+function setEuler(id,k,v) { rotations.find(r=>r.id===id).euler[k]=v; updateAll(); }
+function setQuat(id,k,v) { rotations.find(r=>r.id===id).quat[k]=v; updateAll(); }
+function setMatrix(id,i,v) { rotations.find(r=>r.id===id).matrix[i]=v; updateAll(); }
+
+function setOutEulerOrder(outId,v) {
+  if(outId==='result') { window._resultRot.outEuler.order=v; }
+  else { const rot=rotations.find(r=>'r'+r.id===outId); if(rot) rot.outEuler.order=v; }
+  updateAll();
+}
+function setOutEulerUnit(outId,v) {
+  if(outId==='result') { window._resultRot.outEuler.unit=v; }
+  else { const rot=rotations.find(r=>'r'+r.id===outId); if(rot) rot.outEuler.unit=v; }
+  updateAll();
+}
+
+function toggleTheme() {
+  const b=document.body;
+  b.dataset.theme=b.dataset.theme==='dark'?'light':'dark';
+  updateAll();
+}
+
+// ─── Init ─────────────────────────────────────────────────────────────────────
+addRotation(0);
+</script>
+</body>
+</html>

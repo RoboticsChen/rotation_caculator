@@ -568,23 +568,21 @@ function defaultRotation(id) {
 }
 
 // ─── Canvas 2D axis visualizer ───────────────────────────────────────────────
-// Camera direction (isometric-ish): eye at (1.2, 1.0, 1.6) normalised
+// Right-handed view: eye at (1.2, 1.0, 1.6), looking at the origin, world up = +Y.
+// CAM points from origin toward viewer (used for depth sorting).
+// View basis: forward = -CAM (toward scene), right = forward × up, up_view = right × forward.
 const CAM = (()=>{
   const e=[1.2,1.0,1.6], n=Math.sqrt(e[0]**2+e[1]**2+e[2]**2);
   return e.map(v=>v/n);
 })();
-// Up vector for view (world Y)
 const CAM_RIGHT=(()=>{
-  const up=[0,1,0];
-  // right = normalize(eye × up)
-  const r=[CAM[1]*up[2]-CAM[2]*up[1], CAM[2]*up[0]-CAM[0]*up[2], CAM[0]*up[1]-CAM[1]*up[0]];
+  const f=CAM.map(v=>-v), up=[0,1,0];
+  const r=[f[1]*up[2]-f[2]*up[1], f[2]*up[0]-f[0]*up[2], f[0]*up[1]-f[1]*up[0]];
   const n=Math.sqrt(r[0]**2+r[1]**2+r[2]**2); return r.map(v=>v/n);
 })();
 const CAM_UP=(()=>{
-  // up = cam × right
-  const u=[CAM[1]*CAM_RIGHT[2]-CAM[2]*CAM_RIGHT[1],
-            CAM[2]*CAM_RIGHT[0]-CAM[0]*CAM_RIGHT[2],
-            CAM[0]*CAM_RIGHT[1]-CAM[1]*CAM_RIGHT[0]];
+  const f=CAM.map(v=>-v), r=CAM_RIGHT;
+  const u=[r[1]*f[2]-r[2]*f[1], r[2]*f[0]-r[0]*f[2], r[0]*f[1]-r[1]*f[0]];
   const n=Math.sqrt(u[0]**2+u[1]**2+u[2]**2); return u.map(v=>v/n);
 })();
 
@@ -619,11 +617,20 @@ function drawArrow(ctx, ox,oy, tx,ty, color, label) {
   ctx.fillText(label, tx+ux*4+3, ty+uy*4+4);
 }
 
-function drawCubeEdge(ctx, pts, a, b) {
+function drawGhostAxis(ctx, ox,oy, tx,ty, color, label) {
+  const dx=tx-ox, dy=ty-oy, len=Math.sqrt(dx*dx+dy*dy);
+  if(len<1) return;
+  ctx.save();
+  ctx.strokeStyle=color; ctx.fillStyle=color;
+  ctx.lineWidth=1;
   ctx.beginPath();
-  ctx.moveTo(pts[a][0],pts[a][1]);
-  ctx.lineTo(pts[b][0],pts[b][1]);
+  ctx.moveTo(ox,oy);
+  ctx.lineTo(tx,ty);
   ctx.stroke();
+  ctx.font='10px monospace';
+  const ux=dx/len, uy=dy/len;
+  ctx.fillText(label, tx+ux*4+2, ty+uy*4+3);
+  ctx.restore();
 }
 
 function initViz(rot, canvas) {
@@ -642,7 +649,7 @@ function updateViz(rot) {
   ctx.fillStyle=dark?'#0a0c14':'#e8eaf6';
   ctx.fillRect(0,0,W,H);
 
-  const cx=W/2, cy=H/2, scale=60;
+  const cx=W/2, cy=H*0.6, scale=60;
   const R=rot._mat;
 
   // Transform world axes by rotation matrix R
@@ -656,17 +663,17 @@ function updateViz(rot) {
     return [cx+sx*scale, cy+sy*scale];
   }
 
-  // Draw cube wireframe (unit cube corners ±0.5)
-  const s=0.5;
-  const corners=[
-    [-s,-s,-s],[s,-s,-s],[s,s,-s],[-s,s,-s],
-    [-s,-s, s],[s,-s, s],[s,s, s],[-s,s, s]
-  ];
-  const edges=[[0,1],[1,2],[2,3],[3,0],[4,5],[5,6],[6,7],[7,4],[0,4],[1,5],[2,6],[3,7]];
-  const pts=corners.map(([x,y,z])=>worldToScreen(x,y,z));
-  ctx.strokeStyle=dark?'rgba(79,195,247,0.2)':'rgba(25,118,210,0.2)';
-  ctx.lineWidth=1;
-  edges.forEach(([a,b])=>drawCubeEdge(ctx,pts,a,b));
+  // World-frame ghost axes (identity, faded — reference for the rotated frame)
+  const worldProj=(x,y,z)=>{ const [sx,sy]=project3D(x,y,z); return [cx+sx*scale, cy+sy*scale]; };
+  const ghostAlpha=dark?0.35:0.45;
+  const GL=1.5; // ghost axis length, slightly longer than rotated axes
+  const ghostO=worldProj(0,0,0);
+  const ghosts=[
+    {end:worldProj(GL,0,0), color:`rgba(239,83,80,${ghostAlpha})`,  label:'x', depth:-CAM[0]*GL},
+    {end:worldProj(0,GL,0), color:`rgba(102,187,106,${ghostAlpha})`,label:'y', depth:-CAM[1]*GL},
+    {end:worldProj(0,0,GL), color:`rgba(66,165,245,${ghostAlpha})`, label:'z', depth:-CAM[2]*GL},
+  ].sort((a,b)=>b.depth-a.depth);
+  ghosts.forEach(({end,color,label})=>drawGhostAxis(ctx,ghostO[0],ghostO[1],end[0],end[1],color,label));
 
   // Draw axes
   const O=worldToScreen(0,0,0);
